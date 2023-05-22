@@ -14,7 +14,7 @@ session = boto3.Session(profile_name='myprofile')
 s3=session.client('s3')
 
 #모델 불러오기
-model=joblib.load('./AVO-ai/model/new_model.pkl')
+model=joblib.load('./AVO-ai/model/final_model.pkl')
 
 def predict_sound(audio_file):
   
