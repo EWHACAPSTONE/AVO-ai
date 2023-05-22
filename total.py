@@ -36,7 +36,7 @@ def aws_transcribe():
     transcribe.start_transcription_job(
         TranscriptionJobName=job_name,
         Media={'MediaFileUri': job_uri},
-        MediaFormat='mp4',
+        MediaFormat='wav',
         LanguageCode='ko-KR'
         )
     while True:
