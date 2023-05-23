@@ -1,7 +1,3 @@
-import urllib.request
-import joblib
-import numpy as np
-import librosa
 import boto3
 import tempfile
 import subprocess
