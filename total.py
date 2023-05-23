@@ -87,6 +87,14 @@ def predict_sound(audio_file):
 
   return label
 
+def send():
+        data = {
+            "token" : "hi",
+            "title":"아이가 울고있어요",
+            "body":body
+        }
+    response=requests.post("http://52.78.239.63:8080/fcm", data)
+    print(response.text)
 
 @app.route("/")
 def modeltest():
@@ -106,7 +114,8 @@ def modeltest():
     res=aws_transcribe()
     if res == "nothing":
         res=predict_sound(soundfile)
-
+        
+    send()
     return res
 
 @app.route("/test")
