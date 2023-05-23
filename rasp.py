@@ -9,7 +9,7 @@ s3=session.client('s3')
 def upload_to_s3(bucket_name, file_path):
     try:
         file_name = file_path.split('/')[-1]
-        s3.upload_file(file_path, bucket_name, f"records/{file_name}")
+        s3.upload_file(file_path, bucket_name, f"{file_name}")
         print("WAV file 업로드 성공")
     except Exception as e:
         print("WAV file 업로드 중 오류 발생: ", str(e))
