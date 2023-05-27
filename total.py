@@ -13,6 +13,7 @@ import requests
 
 app = Flask(__name__)
 
+#aws-cli 사용해서 myprofile로 AWS KEY들이 저장되어있는 상태
 session = boto3.Session(profile_name='myprofile')
 s3=session.client('s3')
 model=joblib.load('./AVO-ai/model/final_model.pkl')
@@ -66,57 +67,67 @@ def aws_transcribe():
 
 
 def predict_sound(audio_file):
-  labels = ['crying', 'shouting']
-  y, sr = librosa.load(audio_file, mono=True, duration=2)
+    pad2d = lambda a, i: a[:, 0:i] if a.shape[1] > i else np.hstack((a, np.zeros((a.shape[0], i-a.shape[1]))))
+    labels = ['crying', 'shouting']
+    y, sr = librosa.load(audio_file, mono=True, duration=2)
 
-  mfcc = librosa.feature.mfcc(y=y, sr=sr)
+    mfcc = librosa.feature.mfcc(y=y, sr=sr)
+    padded_mfcc = pad2d(mfcc, 500)
 
-  buffer = []
+    buffer = []
 
-  for element in mfcc:
-    buffer.append(np.mean(element))
-  x_test = np.array([buffer])
+    for element in padded_mfcc:
+        buffer.append(np.mean(element))
+    x_test = np.array([buffer])
 
-  y_predict = model.predict(x_test)
-  label = labels[y_predict[0]]
-  y_predict = model.predict_proba(x_test)
-  confidence = y_predict[0][y_predict[0].argmax()]
+    y_predict = model.predict(x_test)
+    label = labels[y_predict[0]]
+    print(label)
+    y_predict = model.predict_proba(x_test)
+    confidence = y_predict[0][y_predict[0].argmax()]
 
-  if confidence < 0.7:
-    label = "nothing"
+    print(confidence)
+    if confidence < 0.9:
+        label = "nothing"
 
-  return label
+    return label
 
-def send():
-        data = {
-            "token" : "hi",
-            "title":"아이가 울고있어요",
-            "body":body
-        }
-    response=requests.post("http://52.78.239.63:8080/fcm", data)
+def send(body):
+    data = {
+        "token": "hi",
+        "title": "아이가 울고있어요",
+        "body": body
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+    response = requests.post("http://52.78.239.63:8080/fcm", data=json.dumps(data), headers=headers)
     print(response.text)
 
-@app.route("/")
+
+@app.route("/classify", methods=['GET'])
 def modeltest():
-    bucket='avo-data'
-    #key='s37_0.wav'
-    key='record1.wav'
-
-    response=s3.get_object(Bucket=bucket, Key=key)
-    wav_data=response['Body'].read()
-
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_file.write(wav_data)
-
-    soundfile=temp_file.name
-    print(type(wav_data))
 
     res=aws_transcribe()
     if res == "nothing":
+        bucket='avo-data'
+        #key='s37_0.wav'
+        key='record1.wav'
+
+        response=s3.get_object(Bucket=bucket, Key=key)
+        wav_data=response['Body'].read()
+
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(wav_data)
+
+        soundfile=temp_file.name
+        print(type(wav_data))
+
         res=predict_sound(soundfile)
-        
-    send()
+
+    send(res)
     return res
+
 
 @app.route("/test")
 def home():
